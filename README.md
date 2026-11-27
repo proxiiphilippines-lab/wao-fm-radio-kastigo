@@ -126,6 +126,32 @@ The app is still a local-file music player, not an Internet radio encoder or
 FM/OBS integration. Make sure a reverse proxy and hosting plan can support the
 expected number of concurrent audio listeners before relying on it publicly.
 
+### Render static frontend with a local backend tunnel
+
+To host only the frontend on Render while keeping the API and local media on
+this PC:
+
+1. Start the API on this PC with `python main.py` and expose
+   `http://127.0.0.1:8000` through an HTTPS tunnel. Do not expose port `8000`
+   directly to the Internet.
+2. Create a Render **Static Site** with the repository's root directory set to
+   `ui`, build command `npm ci && npm run build`, and publish directory
+   `dist`.
+3. In the Render service's Environment settings, set **`VITE_API_URL`** to the
+   HTTPS tunnel's base URL, for example `https://your-tunnel.example.com`.
+   Enter only the origin (no trailing slash or `/api`). Vite embeds this value
+   when it builds the site, so set it before building or redeploy after
+   changing it.
+
+The API allows HTTPS origins matching `https://*.onrender.com` and the local
+Vite origins. You can add other exact origins with the comma-separated
+`KASTIGO_CORS_ORIGINS` backend setting. The frontend sends credentialed
+requests; an HTTPS tunnel is required for secure cross-site login cookies.
+Some browsers may block third-party cookies between Render and the tunnel,
+which can prevent sign-in; a same-site custom domain setup avoids that browser
+restriction. Keep the PC, API, and tunnel running while the static site is in
+use.
+
 ### Data backups
 
 Stop the API before making a backup so the SQLite database and media files are

@@ -10,6 +10,7 @@ from typing import Annotated, AsyncGenerator, Literal, cast
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -20,6 +21,8 @@ from config.settings import (
     APP_ENV,
     ALLOWED_AUDIO_EXTENSIONS,
     BOOTSTRAP_TOKEN,
+    CORS_ALLOWED_ORIGIN_REGEX,
+    CORS_ALLOWED_ORIGINS,
     MAX_AD_IMAGE_COUNT,
     MAX_AD_IMAGE_BYTES,
     MAX_UPLOAD_BYTES,
@@ -233,13 +236,14 @@ def optional_user(request: Request) -> dict[str, object] | None:
 def set_session_cookie(
     response: Response, request: Request, token: str
 ) -> None:
+    secure_cookie = APP_ENV == "production" or request.url.scheme == "https"
     response.set_cookie(
         key=SESSION_COOKIE,
         value=token,
         max_age=authentication.SESSION_SECONDS,
         httponly=True,
-        secure=APP_ENV == "production" or request.url.scheme == "https",
-        samesite="strict",
+        secure=secure_cookie,
+        samesite="none" if secure_cookie else "strict",
         path="/",
     )
 
@@ -291,6 +295,14 @@ app = FastAPI(
     docs_url=None if APP_ENV == "production" else "/docs",
     redoc_url=None if APP_ENV == "production" else "/redoc",
     openapi_url=None if APP_ENV == "production" else "/openapi.json",
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(CORS_ALLOWED_ORIGINS),
+    allow_origin_regex=CORS_ALLOWED_ORIGIN_REGEX,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -395,11 +407,12 @@ def logout(request: Request, response: Response) -> Response:
     token = request.cookies.get(SESSION_COOKIE)
     if token:
         authentication.revoke_session(token)
+    secure_cookie = APP_ENV == "production" or request.url.scheme == "https"
     response.delete_cookie(
         key=SESSION_COOKIE,
         httponly=True,
-        secure=request.url.scheme == "https",
-        samesite="strict",
+        secure=secure_cookie,
+        samesite="none" if secure_cookie else "strict",
         path="/",
     )
     response.status_code = 204

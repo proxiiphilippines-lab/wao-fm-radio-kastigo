@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 
-import type { LiveAd, Track } from "./api";
+import { apiUrl, type LiveAd, type Track } from "./api";
 
 export type PortalMode = "viewer" | "login" | "signup" | "bootstrap" | "ads";
 
@@ -222,7 +222,7 @@ export function ListenerPortal({
             {currentAdImage ? (
               <img
                 key={currentAdImage.id}
-                src={currentAdImage.url}
+                src={apiUrl(currentAdImage.url)}
                 alt={`WAO FM advertisement ${adImageIndex + 1} of ${adImages.length}`}
               />
             ) : (

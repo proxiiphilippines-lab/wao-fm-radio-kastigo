@@ -24,6 +24,15 @@ except ValueError as error:
     raise ValueError("KASTIGO_PORT must be a valid TCP port.") from error
 if not SERVER_HOST or not 1 <= SERVER_PORT <= 65535:
     raise ValueError("KASTIGO_HOST and KASTIGO_PORT must be valid server settings.")
+CORS_ALLOWED_ORIGINS = tuple(
+    origin.strip()
+    for origin in os.environ.get(
+        "KASTIGO_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+)
+CORS_ALLOWED_ORIGIN_REGEX = r"^https://[a-z0-9-]+\.onrender\.com$"
 
 MAX_UPLOAD_BYTES = 250 * 1024 * 1024
 ALLOWED_AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".m4a", ".flac", ".aac"}

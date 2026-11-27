@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 
 import {
   api,
+  apiUrl,
   ApiError,
   type AdApplication,
   type ApprovedDj,
@@ -765,7 +766,7 @@ function App() {
         return;
       }
       if (audioTrackIds.current[index] !== track.id) {
-        player.src = track.stream_url;
+        player.src = apiUrl(track.stream_url);
         player.load();
         audioTrackIds.current[index] = track.id;
       }
@@ -851,7 +852,7 @@ function App() {
     if (!from || !to) return;
 
     to.pause();
-    to.src = track.stream_url;
+    to.src = apiUrl(track.stream_url);
     to.volume = 0;
     to.muted = mutedRef.current;
     audioTrackIds.current[toIndex] = track.id;
@@ -934,7 +935,7 @@ function App() {
     playbackRequested.current = true;
     setAudioEnabled(true);
     if (audioTrackIds.current[activeAudioIndexRef.current] !== currentTrack.id) {
-      player.src = currentTrack.stream_url;
+      player.src = apiUrl(currentTrack.stream_url);
       player.load();
       audioTrackIds.current[activeAudioIndexRef.current] = currentTrack.id;
     }
@@ -1029,7 +1030,7 @@ function App() {
         player.pause();
         window.setTimeout(() => suppressedPauseEvents.current.delete(index), 250);
       }
-      player.src = currentTrack.stream_url;
+      player.src = apiUrl(currentTrack.stream_url);
       player.load();
       player.volume = volumeRef.current;
       player.muted = mutedRef.current;
@@ -1780,6 +1781,7 @@ function App() {
                     key={index}
                     ref={playerRef}
                     className="audio-player"
+                    crossOrigin="use-credentials"
                     controls={isAdmin && index === activeAudioIndex}
                     hidden={index !== activeAudioIndex}
                     preload="none"
@@ -1811,7 +1813,7 @@ function App() {
                     <img
                       key={currentPromoImage.id}
                       className="listener-promo-image"
-                      src={currentPromoImage.url}
+                      src={apiUrl(currentPromoImage.url)}
                       alt={`On-air promotion ${promoImageIndex + 1} of ${liveAdImageCount}`}
                     />
                   ) : (
@@ -2470,14 +2472,14 @@ function App() {
                   </div>
                 </div>
                 {liveAd?.images.length ? (
-                  <img src={liveAd.images[0].url} alt="First image in the live advertisement slideshow" />
+                  <img src={apiUrl(liveAd.images[0].url)} alt="First image in the live advertisement slideshow" />
                 ) : (
                   <div className="live-ad-image-placeholder">AD IMAGE SPACE</div>
                 )}
                 {liveAd?.images.length ? (
                   <div className="live-ad-gallery" aria-label={`${liveAd.images.length} active advertisement images`}>
                     {liveAd.images.map((image, index) => (
-                      <img key={image.id} src={image.url} alt={`Ad banner ${index + 1}`} />
+                      <img key={image.id} src={apiUrl(image.url)} alt={`Ad banner ${index + 1}`} />
                     ))}
                   </div>
                 ) : null}

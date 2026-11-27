@@ -7,11 +7,13 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from api.main import SESSION_COOKIE, app
+from api.main import SESSION_COOKIE, app, set_session_cookie
 from config.database import connection, initialize_database
 from services.authentication import create_first_admin, create_session
 from services.broadcast import claim_control, current_state
 from services.music_library import get_track, register_track
+from starlette.requests import Request
+from starlette.responses import Response
 
 
 class ApiIntegrationTests(unittest.TestCase):
@@ -90,6 +92,43 @@ class ApiIntegrationTests(unittest.TestCase):
             )
             self.assertEqual(created.status_code, 201)
             self.assertIn("secure", created.headers["set-cookie"].lower())
+
+    def test_render_origin_is_allowed_for_credentialed_cors(self) -> None:
+        response = self.client.options(
+            "/api/auth/status",
+            headers={
+                "Origin": "https://kastigo.onrender.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers["access-control-allow-origin"],
+            "https://kastigo.onrender.com",
+        )
+        self.assertEqual(response.headers["access-control-allow-credentials"], "true")
+
+    def test_https_session_cookie_supports_cross_site_frontend(self) -> None:
+        request = Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "scheme": "https",
+                "server": ("api.example.test", 443),
+                "client": ("127.0.0.1", 12345),
+                "path": "/api/auth/login",
+                "query_string": b"",
+                "headers": [],
+            }
+        )
+        response = Response()
+
+        set_session_cookie(response, request, "test-session-token")
+
+        cookie = response.headers["set-cookie"].lower()
+        self.assertIn("secure", cookie)
+        self.assertIn("samesite=none", cookie)
 
     def test_production_bootstrap_is_unavailable_without_a_server_token(self) -> None:
         with (

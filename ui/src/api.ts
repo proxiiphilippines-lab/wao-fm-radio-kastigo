@@ -103,8 +103,19 @@ export class ApiError extends Error {
   }
 }
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:8000"
+).replace(/\/+$/, "");
+
+export function apiUrl(path: string): string {
+  return new URL(path, `${API_BASE_URL}/`).toString();
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  const response = await fetch(apiUrl(url), {
+    ...init,
+    credentials: "include",
+  });
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as
       | { detail?: string }
